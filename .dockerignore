@@ -1,0 +1,27 @@
+# Dependencies — installed fresh inside Docker
+**/node_modules
+
+# Local build outputs — rebuilt inside Docker
+**/dist
+
+# Git history not needed in image
+.git
+.gitignore
+
+# Local secrets — never bake into an image
+**/.env
+**/.env.*
+!**/.env.example
+
+# Dev tooling
+**/.vscode
+**/.cursor
+**/.idea
+**/coverage
+
+# OS noise
+**/.DS_Store
+**/Thumbs.db
+
+# Logs
+**/*.log

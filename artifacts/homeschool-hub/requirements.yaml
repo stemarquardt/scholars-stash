@@ -1,0 +1,14 @@
+packages:
+  "framer-motion": "For smooth layout animations and card transitions"
+  "date-fns": "For human-readable relative date formatting"
+  "react-hook-form": "For robust form state management"
+  "@hookform/resolvers": "For Zod schema validation in forms"
+
+images:
+  - path: "artifacts/homeschool-hub/public/images/hero-bg.png"
+    description: "Warm, inviting, educational flat-vector illustration of a homeschooling family reading and exploring together, soft pastel colors like peach, soft teal, and sunny yellow, very friendly and welcoming"
+    aspect_ratio: "16:9"
+
+notes:
+  - Assumes Google OAuth endpoint is at GET /api/auth/google
+  - Standard shadcn/ui components are available in @/components/ui
