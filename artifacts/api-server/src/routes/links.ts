@@ -61,7 +61,11 @@ async function enrichLinks(linkIds: number[], userId?: string) {
     .where(inArray(linksTable.id, linkIds));
 
   const users = await db
-    .select()
+    .select({
+      id: usersTable.id,
+      displayName: usersTable.displayName,
+      profileImageUrl: usersTable.profileImageUrl,
+    })
     .from(usersTable)
     .where(inArray(usersTable.id, links.map((l) => l.userId)));
 
@@ -126,7 +130,7 @@ function cascadingPriceRanges(selected: string): string[] {
 }
 
 // Fetch the OG / social preview image for a given URL via Microlink
-router.get("/fetch-og", requireAuth, async (req, res) => {
+router.get("/fetch-og", requireApproved, writeLimiter, async (req, res) => {
   try {
     const { url } = req.query as { url?: string };
     if (!url || validateUrl(url) === null) {
@@ -155,7 +159,7 @@ router.get("/fetch-og", requireAuth, async (req, res) => {
 });
 
 // Check whether any approved link already shares the same root hostname
-router.get("/check-url", async (req, res) => {
+router.get("/check-url", requireApproved, async (req, res) => {
   try {
     const { url } = req.query as { url?: string };
     if (!url) {
@@ -192,7 +196,7 @@ router.get("/check-url", async (req, res) => {
   }
 });
 
-router.get("/", async (req, res) => {
+router.get("/", requireApproved, async (req, res) => {
   try {
     const { search, tags, sortBy, priceRange } = req.query as {
       search?: string;
@@ -336,12 +340,16 @@ router.post("/", requireApproved, writeLimiter, async (req, res) => {
   }
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", requireApproved, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const userId = (req.user as any)?.id;
-    const [enriched] = await enrichLinks([id], userId);
+    const user = req.user as any;
+    const [enriched] = await enrichLinks([id], user?.id);
     if (!enriched) {
+      res.status(404).json({ error: "Link not found" });
+      return;
+    }
+    if (enriched.status !== "approved" && enriched.userId !== user?.id && !user?.isAdmin) {
       res.status(404).json({ error: "Link not found" });
       return;
     }
@@ -507,7 +515,7 @@ const commentBodySchema = z.object({
     .max(MAX_COMMENT_LENGTH, `Comment must be ${MAX_COMMENT_LENGTH} characters or fewer`),
 });
 
-router.get("/:id/comments", async (req, res) => {
+router.get("/:id/comments", requireApproved, async (req, res) => {
   try {
     const linkId = parseInt(req.params.id);
     if (isNaN(linkId)) {
@@ -524,7 +532,14 @@ router.get("/:id/comments", async (req, res) => {
     const userIds = [...new Set(rows.map((r) => r.userId))];
     const users =
       userIds.length > 0
-        ? await db.select().from(usersTable).where(inArray(usersTable.id, userIds))
+        ? await db
+            .select({
+              id: usersTable.id,
+              displayName: usersTable.displayName,
+              profileImageUrl: usersTable.profileImageUrl,
+            })
+            .from(usersTable)
+            .where(inArray(usersTable.id, userIds))
         : [];
     const userMap = new Map(users.map((u) => [u.id, u]));
 
@@ -538,7 +553,7 @@ router.get("/:id/comments", async (req, res) => {
         createdAt: r.createdAt,
         user: {
           id: u?.id,
-          name: u?.displayName || u?.firstName || u?.email || "Anonymous",
+          name: u?.displayName || "Anonymous",
           avatarUrl: u?.profileImageUrl,
         },
       };

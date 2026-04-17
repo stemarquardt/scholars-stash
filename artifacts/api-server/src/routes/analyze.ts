@@ -45,10 +45,15 @@ router.post("/analyze", aiLimiter, async (req, res) => {
     const microlinkData = microlinkRes.ok ? await microlinkRes.json() : null;
     const meta = microlinkData?.data ?? {};
 
-    const pageTitle = meta.title ?? "";
-    const pageDescription = meta.description ?? "";
-    const pageAuthor = meta.author ?? "";
-    const pagePublisher = meta.publisher ?? "";
+    const sanitize = (value: unknown, maxLen: number): string =>
+      typeof value === "string"
+        ? value.replace(/[\r\n\t]/g, " ").trim().slice(0, maxLen)
+        : "";
+
+    const pageTitle = sanitize(meta.title, 200);
+    const pageDescription = sanitize(meta.description, 500);
+    const pageAuthor = sanitize(meta.author, 100);
+    const pagePublisher = sanitize(meta.publisher, 100);
 
     // Get all available tags from DB
     const allTags = await db.select().from(tagsTable);

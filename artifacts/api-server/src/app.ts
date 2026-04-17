@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import path from "path";
 import passport from "passport";
 import cors from "cors";
+import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
 import rateLimit from "express-rate-limit";
@@ -11,6 +12,12 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
+
+app.use(helmet({
+  // CSP disabled here — the SPA's asset hashes and external image domains need
+  // careful tuning. Add a proper CSP policy once the allowed origins are known.
+  contentSecurityPolicy: false,
+}));
 
 app.use(
   pinoHttp({

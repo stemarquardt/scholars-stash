@@ -394,14 +394,19 @@ router.put("/auth/profile", async (req: Request, res: Response) => {
   }
 
   const { firstName, lastNameInitial } = req.body;
-  if (!firstName || !lastNameInitial) {
-    res
-      .status(400)
-      .json({ error: "firstName and lastNameInitial are required" });
+  if (
+    typeof firstName !== "string" || firstName.trim().length === 0 ||
+    typeof lastNameInitial !== "string" || lastNameInitial.trim().length === 0
+  ) {
+    res.status(400).json({ error: "firstName and lastNameInitial are required" });
+    return;
+  }
+  if (firstName.length > 50 || lastNameInitial.length > 1) {
+    res.status(400).json({ error: "Invalid name values" });
     return;
   }
 
-  const displayName = `${firstName} ${lastNameInitial}.`;
+  const displayName = `${firstName.trim()} ${lastNameInitial.trim()}.`;
 
   const [updated] = await db
     .update(usersTable)
